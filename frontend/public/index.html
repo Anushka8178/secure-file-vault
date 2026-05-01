@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      ── CSP Nonce ───────────────────────────────────────────────────────────
+      The server (nginx) replaces __NONCE__ with a per-request Base64 nonce.
+      This same nonce is set in the CSP header's script-src / style-src.
+      React reads it via getNonce() in csp.js.
+    -->
+    <meta name="csp-nonce" content="__NONCE__" />
+
+    <!--
+      ── Security Meta Tags ──────────────────────────────────────────────────
+      These are fallback hints. The authoritative security headers are set
+      by nginx (infra/nginx/nginx.conf). Meta tags are lower precedence.
+    -->
+
+    <!-- Prevent MIME-type sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Block this page from being embedded in frames -->
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+
+    <!-- Referrer policy -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!--
+      ── Favicon ─────────────────────────────────────────────────────────────
+      integrity attribute (SRI) is populated by vite-plugin-sri at build time.
+    -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <title>SecureVault</title>
+
+    <!--
+      ── Entry Script ─────────────────────────────────────────────────────────
+      nonce="__NONCE__" — replaced by nginx per-request.
+      integrity="__SRI_HASH__" — replaced by vite-plugin-sri at build time.
+      type="module" required for ES module entry point.
+
+      DO NOT add any other <script> tags here without a nonce + SRI hash.
+      DO NOT use defer/async on the module script (it's implicit for type=module).
+    -->
+  </head>
+  <body>
+    <!--
+      No inline styles. No inline scripts.
+      All styling via linked CSS (nonced) injected by Vite build.
+    -->
+    <div id="root"></div>
+
+    <!--
+      Main entry — nonce + SRI injected by nginx / vite-plugin-sri.
+      The literal strings below are build-time / server-time placeholders.
+    -->
+    <script
+      type="module"
+      nonce="__NONCE__"
+      src="/assets/main.js"
+      integrity="__SRI_HASH_MAIN__"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
