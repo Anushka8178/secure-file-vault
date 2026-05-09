@@ -39,8 +39,9 @@ export default function LinkGenerator() {
   useEffect(() => {
     client.get('/api/files')
       .then(({ data }) => {
-        setFiles(data.files || []);
-        if (data.files?.length) setSelectedFileId(data.files[0].id);
+        const fileList = data.data?.files || [];
+        setFiles(fileList);
+        if (fileList.length) setSelectedFileId(fileList[0].id);
       })
       .catch(() => setError('Failed to load files.'))
       .finally(() => setLoadingFiles(false));
@@ -58,7 +59,7 @@ export default function LinkGenerator() {
         ttl,
         bindIP,
       });
-      setLinks((prev) => [data, ...prev]);
+      setLinks((prev) => [data.data, ...prev]);
     } catch (err) {
       setError(err.message || 'Failed to generate link.');
     } finally {

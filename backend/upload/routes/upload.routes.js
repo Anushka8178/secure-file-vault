@@ -3,7 +3,11 @@ const router = express.Router();
 
 const { authenticate } = require('../../auth/middleware/authenticate');
 const { uploadMiddleware } = require('../middleware/sizeLimit');
-const { uploadFile, getStatus, getFiles } = require('../controllers/upload.controller');
+const { uploadFile, getStatus, getFiles, downloadFile } = require('../controllers/upload.controller');
+
+// PUBLIC ROUTE: Download file via signed link
+// Placed BEFORE the authenticate middleware!
+router.get('/:id/download', downloadFile);
 
 // Require authentication for all file endpoints
 router.use(authenticate);

@@ -1,8 +1,9 @@
 const File = require('../models/file.model');
-const { encryptBuffer } = require('../services/encrypt.service');
-const { saveFile } = require('../services/storage.service');
+const { encryptBuffer, decryptBuffer } = require('../services/encrypt.service');
+const { saveFile, readFile } = require('../services/storage.service');
 const { queueFileForScan } = require('../services/scan.service');
 const { auditLog } = require('../../audit/audit.service');
+const { verifySignedLink } = require('../../links/signedLink.service');
 const { success } = require('../../shared/response');
 const { AppError } = require('../../shared/errors');
 
@@ -65,11 +66,12 @@ const getStatus = async (req, res) => {
  * GET /api/files
  */
 const getFiles = async (req, res) => {
-  const files = await File.find({ uploadedBy: req.user.id }).sort({ createdAt: -1 });
+  // Only return files that have passed the security scan
+  const files = await File.find({ uploadedBy: req.user.id, status: 'approved' }).sort({ createdAt: -1 });
   
   const formattedFiles = files.map(f => ({
     id: f._id,
-    originalName: f.originalName,
+    name: f.originalName,
     size: f.size,
     status: f.status,
     createdAt: f.createdAt,
@@ -80,4 +82,40 @@ const getFiles = async (req, res) => {
   return success(res, { files: formattedFiles });
 };
 
-module.exports = { uploadFile, getStatus, getFiles };
+/**
+ * GET /api/files/:id/download
+ * Public route (authenticated via HMAC signature in query)
+ */
+const downloadFile = async (req, res) => {
+  const { id } = req.params;
+  const { expires, sig, ip } = req.query;
+
+  // 1. Verify signed link
+  const result = verifySignedLink(id, { expires, sig, ip }, req.ip);
+  if (!result.valid) {
+    throw new AppError(`Invalid link: ${result.reason}`, 403, 'LINK_INVALID');
+  }
+
+  // 2. Fetch file from DB
+  const file = await File.findById(id);
+  if (!file) {
+    throw new AppError('File not found', 404, 'NOT_FOUND');
+  }
+
+  if (file.status !== 'approved') {
+    throw new AppError('File is not approved for download', 403, 'FILE_NOT_APPROVED');
+  }
+
+  // 3. Read encrypted buffer
+  const encryptedBuffer = await readFile(file.encryptedPath);
+
+  // 4. Decrypt
+  const decryptedBuffer = decryptBuffer(encryptedBuffer, file.iv);
+
+  // 5. Send file
+  res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `attachment; filename="${file.originalName}"`);
+  res.send(decryptedBuffer);
+};
+
+module.exports = { uploadFile, getStatus, getFiles, downloadFile };

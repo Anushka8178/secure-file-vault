@@ -100,10 +100,11 @@ export default function Upload() {
 
     try {
       const data = await upload(file);
+      const fileData = data.data?.file;
       const uploaded = {
-        id:     data.file?.id,
-        name:   sanitizePlainText(data.file?.name || file.name),
-        status: sanitizePlainText(data.file?.status || 'pending'),
+        id:     fileData?.id,
+        name:   sanitizePlainText(fileData?.name || file.name),
+        status: sanitizePlainText(fileData?.status || 'pending'),
       };
       setUploadedFile(uploaded);
       setFile(null);
