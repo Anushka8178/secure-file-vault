@@ -8,12 +8,10 @@ const { AuthError } = require('../../shared/errors');
  */
 const authenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = req.cookies?.access_token;
+    if (!token) {
       throw new AuthError('No token provided', 'NO_TOKEN');
     }
-
-    const token = authHeader.slice(7);
     const payload = verifyAccessToken(token);
 
     // Check if token is blacklisted (logged out)

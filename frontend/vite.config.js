@@ -22,7 +22,7 @@ import react from '@vitejs/plugin-react';
  * NOTE: Use vite-plugin-sri3 (maintained fork) not the original vite-plugin-sri
  * which is unmaintained.
  */
-import sri from 'vite-plugin-sri3';
+import { sri } from 'vite-plugin-sri3';
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
@@ -88,12 +88,12 @@ export default defineConfig(({ mode }) => {
       // This is read-only config — backend team owns the actual endpoints
       proxy: {
         '/api': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:5000',
           changeOrigin: true,
           secure: false, // dev only; production goes through nginx TLS
         },
         '/auth': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:5000',
           changeOrigin: true,
           secure: false,
         },

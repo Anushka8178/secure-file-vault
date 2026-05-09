@@ -7,7 +7,6 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    index: true,
   },
   username: {
     type: String,
@@ -87,7 +86,7 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-userSchema.index({ email: 1 });
+
 userSchema.index({ lockoutUntil: 1 });
 
 module.exports = mongoose.model('User', userSchema);

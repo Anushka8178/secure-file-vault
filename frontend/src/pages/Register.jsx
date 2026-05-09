@@ -155,7 +155,7 @@ export default function Register() {
 
           <button
             type="submit"
-            disabled={submitting || password !== confirm || password.length < 12}
+            disabled={submitting}
             style={styles.button}
           >
             {submitting ? 'Creating account…' : 'Create Account'}

@@ -16,7 +16,7 @@
 import axios from 'axios';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const CSRF_COOKIE_NAME = 'csrf_token';       // set by backend (NOT HttpOnly — must be readable)
 const CSRF_HEADER_NAME = 'X-CSRF-Token';     // double-submit cookie pattern (Member A)
 
@@ -103,9 +103,11 @@ client.interceptors.response.use(
 
     // 401 — session expired or not authenticated
     if (status === 401) {
-      // Clear any non-HttpOnly state (nothing in localStorage — there is none)
-      // Redirect to login; React Router will handle it
-      window.location.replace('/login');
+      // Prevent infinite redirect loops if we are already on login or register
+      const path = window.location.pathname;
+      if (path !== '/login' && path !== '/register') {
+        window.location.replace('/login');
+      }
       return Promise.reject({ message: 'Session expired.', status: 401 });
     }
 
@@ -119,9 +121,14 @@ client.interceptors.response.use(
       console.warn('[client] 429 Too Many Requests — rate limit hit.');
     }
 
+    let message = error.response.data?.message || 'An error occurred.';
+    if (status === 422 && Array.isArray(error.response.data?.details) && error.response.data.details.length > 0) {
+      message = error.response.data.details[0].msg || message;
+    }
+
     // Never log full error response body (may contain sensitive data)
     return Promise.reject({
-      message: error.response.data?.message || 'An error occurred.',
+      message,
       status,
     });
   }

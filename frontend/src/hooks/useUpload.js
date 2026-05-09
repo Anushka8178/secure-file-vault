@@ -1,66 +1,48 @@
-/**
- * useAuditStream.js — Member C
- * React hook for consuming the audit log SSE stream.
- *
- * Security rules:
- * - EventSource sends cookies automatically (same-origin, withCredentials)
- * - No auth token in query string or URL
- * - All parsed data sanitized via sanitizePlainText before storing in state
- *
- * Consumes: GET /api/audit/stream (SSE)
- *
- * Returns: { entries, connected, error }
- */
+import { useState, useCallback } from 'react';
+import client from '../api/client.js';
 
-import { useState, useEffect } from 'react';
-import { sanitizePlainText } from '../security/domPurify.config.js';
-
-const MAX_ENTRIES = 200;
-
-export function useAuditStream() {
-  const [entries, setEntries] = useState([]);
-  const [connected, setConnected] = useState(false);
+export function useUpload() {
+  const [progress, setProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const es = new EventSource('/api/audit/stream', { withCredentials: true });
-
-    es.onopen = () => {
-      setConnected(true);
-      setError('');
-    };
-
-    es.onmessage = (event) => {
-      let parsed;
-      try {
-        parsed = JSON.parse(event.data);
-      } catch {
-        return;
-      }
-
-      const entry = {
-        id:        Date.now() + Math.random(),
-        timestamp: sanitizePlainText(parsed.timestamp || ''),
-        action:    sanitizePlainText(parsed.action || ''),
-        actor:     sanitizePlainText(parsed.actor || ''),
-        ip:        sanitizePlainText(parsed.ip || ''),
-        level:     sanitizePlainText(parsed.level || 'INFO'),
-        details:   sanitizePlainText(parsed.details || ''),
-      };
-
-      setEntries((prev) => {
-        const next = [...prev, entry];
-        return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
-      });
-    };
-
-    es.onerror = () => {
-      setConnected(false);
-      setError('Stream disconnected. Reconnecting…');
-    };
-
-    return () => es.close();
+  const reset = useCallback(() => {
+    setProgress(0);
+    setUploading(false);
+    setError('');
   }, []);
 
-  return { entries, connected, error };
+  const upload = useCallback(async (file) => {
+    setUploading(true);
+    setProgress(0);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('file', file); // 'file' is the field name expected by the backend
+
+    try {
+      // Sends to the backend, which currently returns 501 Not Implemented 
+      // based on our placeholder router.
+      const response = await client.post('/api/files/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setProgress(percentCompleted);
+          }
+        },
+      });
+      return response.data;
+    } catch (err) {
+      // The error message comes from client.js response interceptor
+      setError(err.message || 'Upload failed');
+      throw err;
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  return { upload, progress, uploading, error, reset };
 }

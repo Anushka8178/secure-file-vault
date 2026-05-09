@@ -107,7 +107,15 @@ const login = async (req, res) => {
     ip: req.ip,
   });
 
-  // Set refresh token as HttpOnly cookie
+  // Set tokens as HttpOnly cookies
+  res.cookie('access_token', accessToken, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+    path: '/',
+  });
+
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
@@ -119,7 +127,6 @@ const login = async (req, res) => {
   await auditLog({ event: 'LOGIN_SUCCESS', userId: user._id, ip: req.ip });
 
   return success(res, {
-    accessToken,
     user: { id: user._id, email: user.email, username: user.username, role: user.role },
   });
 };
@@ -146,6 +153,14 @@ const refresh = async (req, res) => {
     jti: uuidv4(),
   });
 
+  res.cookie('access_token', accessToken, {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+    path: '/',
+  });
+
   res.cookie('refresh_token', newRefreshToken, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
@@ -154,7 +169,7 @@ const refresh = async (req, res) => {
     path: '/auth/refresh',
   });
 
-  return success(res, { accessToken });
+  return success(res, null, 'Tokens refreshed');
 };
 
 /**
@@ -166,7 +181,8 @@ const logout = async (req, res) => {
   // Blacklist current access token
   if (jti) await blacklistAccessToken(jti, 900); // 15 min TTL matches JWT_ACCESS_TTL
 
-  // Invalidate refresh token cookie
+  // Invalidate tokens
+  res.clearCookie('access_token', { path: '/' });
   const refreshToken = req.cookies?.refresh_token;
   if (refreshToken) {
     res.clearCookie('refresh_token', { path: '/auth/refresh' });

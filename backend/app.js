@@ -15,6 +15,7 @@ const { ipLimiter } = require('./auth/middleware/rateLimiter');
 const authRoutes = require('./auth/routes/auth.routes');
 const adminRoutes = require('./admin/admin.routes');
 const linkRoutes = require('./links/signedLink.routes');
+const uploadRoutes = require('./upload/routes/upload.routes');
 
 const app = express();
 
@@ -59,8 +60,14 @@ app.use(validateCsrf);
 
 // ── Routes
 app.use('/auth', authRoutes);
-app.use('/admin', adminRoutes);
-app.use('/links', linkRoutes);
+
+const apiRouter = express.Router();
+apiRouter.use('/admin', adminRoutes);
+apiRouter.use('/links', linkRoutes);
+apiRouter.use('/files', uploadRoutes);
+
+app.use('/api', apiRouter);
+
 
 // ── JWKS well-known endpoint (also mounted in auth routes)
 app.get('/.well-known/jwks.json', (req, res) => {
