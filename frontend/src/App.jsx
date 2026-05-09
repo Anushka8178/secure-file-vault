@@ -21,6 +21,7 @@ import Upload       from './pages/Upload.jsx';
 import Admin        from './pages/Admin.jsx';
 import MfaSetup     from './pages/MfaSetup.jsx';
 import LinkGenerator from './pages/LinkGenerator.jsx';
+import Navbar from './components/Navbar.jsx';
 
 // ── PrivateRoute ──────────────────────────────────────────────────────────────
 /**
@@ -161,6 +162,7 @@ export default function App() {
       {/* AuthProvider validates session via /auth/me on mount.
           No tokens in localStorage — server-side cookie auth only. */}
       <AuthProvider>
+        <Navbar />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

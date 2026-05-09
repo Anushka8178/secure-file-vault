@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { register, login, refresh, logout, logoutAll, me, registerValidation, loginValidation } = require('../controllers/auth.controller');
+const { register, login, refresh, logout, logoutAll, me, getSessions, revokeSessionById, revokeOtherSessionsController, registerValidation, loginValidation } = require('../controllers/auth.controller');
 const { setupMfa, verifyMfa, disableMfa, regenerateBackupCodes } = require('../controllers/mfa.controller');
 const { forgotPassword, resetPassword, changePassword } = require('../controllers/password.controller');
 const { authenticate } = require('../middleware/authenticate');
@@ -23,6 +23,9 @@ router.get('/me', me);
 router.post('/logout', logout);
 router.post('/logout-all', logoutAll);
 router.put('/password/change', changePassword);
+router.get('/sessions', getSessions);
+router.delete('/sessions', revokeOtherSessionsController);
+router.delete('/sessions/:id', revokeSessionById);
 
 // MFA routes
 router.post('/mfa/setup', setupMfa);

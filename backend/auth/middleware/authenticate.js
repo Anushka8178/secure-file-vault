@@ -6,10 +6,16 @@ const { AuthError } = require('../../shared/errors');
  * JWT authentication middleware
  * Verifies JWT, checks blacklist, attaches user to req
  */
+const path = require('path');
+const fs = require('fs');
+
 const authenticate = async (req, res, next) => {
   try {
+    const debugPath = path.join(__dirname, '../../auth-debug.txt');
+    fs.appendFileSync(debugPath, `\n[AUTH] cookies: ${JSON.stringify(req.cookies)}`);
     const token = req.cookies?.access_token;
     if (!token) {
+      fs.appendFileSync(debugPath, ` | ERROR: NO_TOKEN\n`);
       throw new AuthError('No token provided', 'NO_TOKEN');
     }
     const payload = verifyAccessToken(token);
@@ -25,10 +31,13 @@ const authenticate = async (req, res, next) => {
       email: payload.email,
       role: payload.role,
       jti: payload.jti,
+      sessionId: payload.sessionId,
     };
 
     next();
   } catch (err) {
+    const debugPath = path.join(__dirname, '../../auth-debug.txt');
+    fs.appendFileSync(debugPath, ` | CATCH ERR: ${err.name} - ${err.message}\n`);
     if (err.name === 'TokenExpiredError') {
       return next(new AuthError('Token expired', 'TOKEN_EXPIRED'));
     }

@@ -1,11 +1,20 @@
 const express = require('express');
 const router = express.Router();
 
-// Placeholder for future file upload endpoints
-// Frontend expects these at /api/files/...
+const { authenticate } = require('../../auth/middleware/authenticate');
+const { uploadMiddleware } = require('../middleware/sizeLimit');
+const { uploadFile, getStatus, getFiles } = require('../controllers/upload.controller');
 
-router.all('*', (req, res) => {
-  res.status(501).json({ message: 'File upload endpoints are not implemented yet.' });
-});
+// Require authentication for all file endpoints
+router.use(authenticate);
+
+// List files for the logged in user
+router.get('/', getFiles);
+
+// Upload a new file
+router.post('/upload', uploadMiddleware.single('file'), uploadFile);
+
+// Poll file scan status
+router.get('/:id/status', getStatus);
 
 module.exports = router;

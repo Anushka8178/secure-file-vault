@@ -4,7 +4,7 @@ const User = require('../models/user.model');
 const { hashPassword, verifyPassword } = require('../services/password.service');
 const { signAccessToken } = require('../services/jwt.service');
 const { createRefreshToken, rotateRefreshToken, revokeAllUserTokens, blacklistAccessToken } = require('../services/token.service');
-const { createSession, revokeAllSessions } = require('../services/session.service');
+const { createSession, revokeAllSessions, getUserSessions, revokeSession, revokeOtherSessions } = require('../services/session.service');
 const { recordFailedAttempt, resetFailedAttempts } = require('../middleware/lockout');
 const { verifyTotp, consumeBackupCode } = require('../services/mfa.service');
 const { auditLog } = require('../../audit/audit.service');
@@ -94,7 +94,7 @@ const login = async (req, res) => {
     sub: user._id.toString(),
     email: user.email,
     role: user.role,
-    jti: uuidv4(),
+    sessionId,
   });
 
   const { token: refreshToken } = await createRefreshToken(user._id, {
@@ -150,7 +150,6 @@ const refresh = async (req, res) => {
     sub: user._id.toString(),
     email: user.email,
     role: user.role,
-    jti: uuidv4(),
   });
 
   res.cookie('access_token', accessToken, {
@@ -212,6 +211,47 @@ const me = async (req, res) => {
   return success(res, { user });
 };
 
+/**
+ * GET /auth/sessions
+ */
+const getSessions = async (req, res) => {
+  const sessions = await getUserSessions(req.user.id);
+  
+  // Format for frontend
+  const formattedSessions = sessions.map(s => ({
+    id: s.sessionId,
+    deviceName: s.userAgent || 'Unknown Device',
+    ipAddress: s.ip || 'Unknown IP',
+    userAgent: s.userAgent,
+    createdAt: s.createdAt,
+    lastSeenAt: s.createdAt, // Optional, could be updated on refresh
+    isCurrent: s.sessionId === req.user.sessionId
+  }));
+  
+  return success(res, { sessions: formattedSessions });
+};
+
+/**
+ * DELETE /auth/sessions/:id
+ */
+const revokeSessionById = async (req, res) => {
+  const { id } = req.params;
+  await revokeSession(req.user.id, id);
+  await auditLog({ event: 'SESSION_REVOKED', userId: req.user.id, ip: req.ip, meta: { sessionId: id } });
+  return success(res, null, 'Session revoked');
+};
+
+/**
+ * DELETE /auth/sessions
+ * Revokes all OTHER sessions for the user.
+ */
+const revokeOtherSessionsController = async (req, res) => {
+  const currentSessionId = req.user.sessionId;
+  await revokeOtherSessions(req.user.id, currentSessionId);
+  await auditLog({ event: 'OTHER_SESSIONS_REVOKED', userId: req.user.id, ip: req.ip, meta: { currentSessionId } });
+  return success(res, null, 'All other sessions revoked');
+};
+
 module.exports = {
   register,
   login,
@@ -219,6 +259,9 @@ module.exports = {
   logout,
   logoutAll,
   me,
+  getSessions,
+  revokeSessionById,
+  revokeOtherSessionsController,
   registerValidation,
   loginValidation,
 };

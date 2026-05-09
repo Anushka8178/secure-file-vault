@@ -51,4 +51,8 @@ module.exports = {
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+
+  // File Uploads
+  FILE_ENCRYPTION_KEY: process.env.FILE_ENCRYPTION_KEY || 'default-file-key-32-chars-long!!',
+  UPLOAD_DIR: process.env.UPLOAD_DIR || require('path').join(__dirname, '../../data/files'),
 };

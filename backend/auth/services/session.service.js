@@ -43,4 +43,13 @@ const revokeAllSessions = async (userId) => {
   if (keys.length) await redis.del(...keys);
 };
 
-module.exports = { createSession, getUserSessions, revokeSession, revokeAllSessions };
+/**
+ * Revoke all sessions EXCEPT the specified one
+ */
+const revokeOtherSessions = async (userId, currentSessionId) => {
+  const keys = await redis.keys(`${SESSION_PREFIX}${userId}:*`);
+  const keysToDelete = keys.filter(k => !k.endsWith(`:${currentSessionId}`));
+  if (keysToDelete.length) await redis.del(...keysToDelete);
+};
+
+module.exports = { createSession, getUserSessions, revokeSession, revokeAllSessions, revokeOtherSessions };

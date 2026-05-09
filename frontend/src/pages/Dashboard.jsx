@@ -25,7 +25,7 @@ export default function Dashboard() {
     let cancelled = false;
     client.get('/auth/sessions')
       .then(({ data }) => {
-        if (!cancelled) setSessions(data.sessions || []);
+        if (!cancelled) setSessions(data.data?.sessions || []);
       })
       .catch(() => {
         if (!cancelled) setError('Failed to load sessions.');

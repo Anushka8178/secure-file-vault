@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     let cancelled = false;
     client.get('/auth/me')
       .then(({ data }) => {
-        if (!cancelled) setUser(data.user || false);
+        if (!cancelled) setUser(data.data?.user || false);
       })
       .catch(() => {
         // 401 intercepted in client.js; here we just mark unauthenticated
