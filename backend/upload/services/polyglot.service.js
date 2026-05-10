@@ -7,7 +7,6 @@
 const SUSPICIOUS_PATTERNS = [
   '<script',
   '<?php',
-  '<%',       // ASP/JSP tags
   'javascript:',
   'vbscript:',
   'onload=',
